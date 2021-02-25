@@ -86,7 +86,7 @@ namespace Project_FinchControl
                         break;
 
                     case "c":
-                       DataRecorderDisplayMenuScreen(finchRobot);
+                       //DataRecorderDisplayMenuScreen(finchRobot);
                         break;
 
                     case "d":
@@ -118,12 +118,12 @@ namespace Project_FinchControl
 
         #region DATA RECORDER
 
-        /// <summary>
+       /* /// <summary>
         /// *****************************************************************
         /// *                     Data Recorder Menu                          *
         /// *****************************************************************
         /// </summary>
-        static void DataRecorderDisplayMenuScreen(Finch finchRobot)
+       static void DataRecorderDisplayMenuScreen(Finch finchRobot)
         {
             Console.CursorVisible = true;
 
@@ -290,8 +290,8 @@ namespace Project_FinchControl
 
                 DisplayMenuPrompt("Data Recorder");
 
-                return numberOfDataPoints;
-            }
+                return numberOfDataPoints;}*/
+            
 
             #endregion
 
