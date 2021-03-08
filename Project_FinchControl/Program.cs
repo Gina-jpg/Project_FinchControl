@@ -91,7 +91,7 @@ namespace Project_FinchControl
                         break;
 
                     case "d":
-                        Console.WriteLine("\tWIP. Please choose another option");
+                        AlarmSystemDisplayMenuScreen(finchRobot);
                         break;
 
                     case "e":
@@ -483,18 +483,543 @@ namespace Project_FinchControl
                 DisplayMenuPrompt("Data Recorder");
 
                 return numberOfDataPoints;}
+
+
+        #endregion
+
+        #region ALARM SYSTEM
+
+        /// <summary>
+        /// *****************************************************************
+        /// *                     Alarm System Menu                         *        
+        /// ***************************************************************** 
+        /// </summary>
+        /// <param name="finchRobot">finch robot object</param>
+        static void AlarmSystemDisplayMenuScreen(Finch finchRobot)
+        {
+            Console.CursorVisible = true;
+
+            bool quitAlarmSystemMenu = false;
+            string menuChoice;
+
+            string sensorsToMonitor = "";
+            string rangeType = "";
+            int minMaxThresholdValue = 0;
+            int timeToMonitor = 0;
+            int tempThreshold = 0;
+
+            do
+            {
+                DisplayScreenHeader("Alarm System Menu");
+
+
+                //
+                // get user menu choice
+                //
+                Console.WriteLine("\ta) Get light sensors to monitor");
+                Console.WriteLine("\tb) Set range type");
+                Console.WriteLine("\tc) Set minimum/maximum light threshold value");
+                Console.WriteLine("\td) Set minimum/maximum temperature threshold value");
+                Console.WriteLine("\te) Set time to monitor");
+                Console.WriteLine("\tf) Set light alarm");
+                Console.WriteLine("\tg) Set temperature alarm");
+                Console.WriteLine("\tq) Main Menu");
+                Console.Write("\t\tEnter Choice:");
+                menuChoice = Console.ReadLine().ToLower();
+
+                //
+                // process user menu choice
+                //
+                switch (menuChoice)
+                {
+                    case "a":
+                        sensorsToMonitor = AlarmSystemDisplayGetSensors();
+                        break;
+
+                    case "b":
+                        rangeType = AlarmSystemDisplayGetRangeType(finchRobot);
+                        break;
+
+                    case "c":
+                        minMaxThresholdValue = AlarmSystemDisplayGetLightThresholdValue(finchRobot, sensorsToMonitor);
+                        break;
+                    case "d":
+                        tempThreshold = AlarmSystemDisplayGetTemperatureThresholdValue(finchRobot);
+                        break;
+
+                    case "e":
+                        timeToMonitor = AlarmSystemDisplayGetTimeToMonitor(finchRobot);
+                        break;
+
+                    case "f":
+                        AlarmSystemDisplaySetLightAlarm(finchRobot, sensorsToMonitor, rangeType, minMaxThresholdValue, timeToMonitor);
+                        break;
+
+                    case "g":
+                        AlarmSystemDisplaySetTempAlarm(finchRobot, rangeType, tempThreshold, timeToMonitor);
+                        break;
+
+                    case "q":
+                        quitAlarmSystemMenu = true;
+                        Console.Clear();
+                        break;
+
+                    default:
+                        Console.WriteLine();
+                        Console.WriteLine("\tPlease enter a letter for the menu choice.");
+                        DisplayContinuePrompt();
+                        break;
+                }
+
+            } while (!quitAlarmSystemMenu);
+        }
+
+     
+        /// <summary>
+        /// Get temperature threshold value from user
+        /// </summary>
+        /// <param name="finchRobot">finch robot object</param>
+        /// <returns>temperature threshold value</returns>
+        static int AlarmSystemDisplayGetTemperatureThresholdValue(Finch finchRobot)
+        {
+            int tempThreshold;
+
+            DisplayScreenHeader("Temperature Threshold");
+
+            Console.WriteLine($"Current temperature: {finchRobot.getTemperature().ToString("N2")}");
+            //get threshold from user
+            Console.WriteLine("Enter Temperature Threshold");
+
+
+            bool validResponse = false;
+
+            do
+            {
+                string userResponse = Console.ReadLine();
+
+                if (!int.TryParse(userResponse, out tempThreshold))
+                {
+                    Console.WriteLine("Please enter a positive whole number");
+                    validResponse = false;
+                }
+                else
+                {
+                    validResponse = true;
+                    Console.WriteLine($"You entered {tempThreshold} as your threshold to alarm");
+                }
+
+            } while (!validResponse);
+
+
+            DisplayMenuPrompt("Alarm System Menu");
+
+
+            return tempThreshold;
+        }
+
+
+        /// <summary>
+        /// Monitor temperature values and alarm if temperature threshold is exceeded
+        /// </summary>
+        /// <param name="finchRobot">finch robot object</param>
+        /// <param name="rangeType">minimum or maximum range type</param>
+        /// <param name="tempThreshold">temperature threshold</param>
+        /// <param name="timeToMonitor">time to monitor</param>
+        static void AlarmSystemDisplaySetTempAlarm(Finch finchRobot, string rangeType, int tempThreshold, int timeToMonitor)
+        {
+            DisplayScreenHeader("Temperature Alarm");
+
+            Console.WriteLine("\tStart");
+            DisplayContinuePrompt();
+
+            //Create temp array
+            double[] tempValues = new double[timeToMonitor];
+            bool thresholdExceeded = false;
+            int secondsElapsed = 0;
+
+            do {
+
+
+                for (int index = 0; index < tempValues.Length; index++)
+                {
+
+                    tempValues[index] = finchRobot.getTemperature();
+                    double temperature = tempValues[index];
+
+                    if (!thresholdExceeded && secondsElapsed < timeToMonitor)
+                    {
+                        //loop through temperature values
+                        Console.WriteLine($"Temperature reads {temperature} in degrees Celcius");
+
+                        //wait 1 second & increment
+                        finchRobot.wait(1000);
+                        secondsElapsed++;
+                    }
+                    
+
+                    //set thresholds
+                    switch (rangeType)
+                    {
+                        case "minimum":
+                            thresholdExceeded = (temperature <= tempThreshold);
+                            break;
+
+                        case "maximum":
+                            thresholdExceeded = (temperature >= tempThreshold);
+                            break;
+
+                        default:
+                            Console.WriteLine("Cannot determine whether value was exceeded");
+                            break;
+                    }
+                }
+                    
+                
+            } while (!thresholdExceeded && secondsElapsed < timeToMonitor);
+
+
+            if (thresholdExceeded)
+            {
+                Console.WriteLine("Threshold Exceeded");
+
+                if (thresholdExceeded)
+                {
+                    //alarm
+
+                    finchRobot.noteOn(500);
+                    finchRobot.wait(2000);
+                    finchRobot.noteOff();
+                }
+
+            }
+            else
+            {
+                Console.WriteLine("Threshold Not Exceeded Within Time Limit");
+            }
+
+
+            DisplayMenuPrompt("Alarm System");
+
+        }
+
+
+        /// <summary>
+        /// Monitor light values and alarm if light threshold is exceeded
+        /// </summary>
+        /// <param name="finchRobot">finch robot object</param>
+        /// <param name="sensorsToMonitor">sensors to monitor</param>
+        /// <param name="rangeType">minimum or maximum range type</param>
+        /// <param name="minMaxThresholdValue">light min or max threshold value</param>
+        /// <param name="timeToMonitor">time to monitor</param>
+        static void AlarmSystemDisplaySetLightAlarm(Finch finchRobot, string sensorsToMonitor, string rangeType, int minMaxThresholdValue, int timeToMonitor)
+        {
+
+            bool thresholdExceeded = false;
+            int secondsElapsed = 1;
+            int leftLightSensorValue;
+            int rightLightSensorValue;
+
+            DisplayScreenHeader("Set Alarm");
+
+            //echo values to user
+            Console.WriteLine("\tStart");
+            DisplayContinuePrompt();
+
+            do
+            {
+                //get current light levels
+                leftLightSensorValue = finchRobot.getLeftLightSensor();
+                rightLightSensorValue = finchRobot.getRightLightSensor();
+
+                switch (sensorsToMonitor)
+                {
+                    case "left":
+                        Console.WriteLine($"Current left light sensor reads {leftLightSensorValue}");
+                        break;
+                    case "right":
+                        Console.WriteLine($"Current right light sensor reads {rightLightSensorValue}");
+                        break;
+                        
+                    case "both":
+                        Console.WriteLine($"Current left light sensor reads {leftLightSensorValue}");
+                        Console.WriteLine($"Current right light sensor reads {rightLightSensorValue}");
+                        break;
+
+                    default:
+                        Console.WriteLine("Cannot find light sensor values");
+                        break;
+                }
+                //wait 1 second and increment
+                finchRobot.wait(1000);
+                secondsElapsed++;
+
+                //test for threshold exceeded
+                switch (sensorsToMonitor)
+                {
+                    case "left":
+                        if (rangeType == "minimum")
+                        {
+                            thresholdExceeded = (leftLightSensorValue <= minMaxThresholdValue); //if threshold exceeded T or F - same as below
+                        }
+                        else //maximum
+                        {
+                            thresholdExceeded = (leftLightSensorValue >= minMaxThresholdValue);
+                        }
+                        break;
+
+                    case "right":
+                        if (rangeType == "minimum")
+                        {
+                            thresholdExceeded = (rightLightSensorValue <= minMaxThresholdValue);
+
+                        }
+                        else //maximum
+                        {
+                            thresholdExceeded = (rightLightSensorValue >= minMaxThresholdValue);
+                        }
+                        break;
+
+                    case "both":
+                        if (rangeType == "minimum")
+                        {
+                            thresholdExceeded = ((leftLightSensorValue <= minMaxThresholdValue) || (rightLightSensorValue <= minMaxThresholdValue));
+                        }
+                        else //maximum
+                        {
+                            thresholdExceeded = (leftLightSensorValue >= minMaxThresholdValue) || (rightLightSensorValue >= minMaxThresholdValue);
+                        }
+                        break;
+
+                    default:
+                        Console.WriteLine("Cannot determine whether value was exceeded");
+                        break;
+
+                }
+
+
+            } while (!thresholdExceeded && secondsElapsed <= timeToMonitor);
+
+            //Display Results
+
+            if (thresholdExceeded)
+            {
+                Console.WriteLine("Threshold Exceeded");
+
+                if (thresholdExceeded)
+                {
+                    //alarm
+
+                    finchRobot.noteOn(500);
+                    finchRobot.wait(2000);
+                    finchRobot.noteOff();
+                }
+
+            }
+            else
+            {
+                Console.WriteLine("Threshold Not Exceeded Within Time Limit");
+            }
+
+
+
+            DisplayMenuPrompt("Alarm System Menu");
+        }
+
+
+        /// <summary>
+        /// Get time to monitor from user
+        /// </summary>
+        /// <param name="finchRobot">finch robot object</param>
+        /// <returns>time to monitor</returns>
+        static int AlarmSystemDisplayGetTimeToMonitor(Finch finchRobot)
+        {
+            int timeToMonitor = 0;
+
+            DisplayScreenHeader("Time to Monitor");
+
+            Console.WriteLine("Enter time to monitor in seconds");
+
+            bool validResponse = false;
+
+            //validate input in seconds
+            do
+            {
+                string userResponse = Console.ReadLine();
+
+                if (!int.TryParse(userResponse, out timeToMonitor))
+                {
+                    Console.WriteLine("Please enter a positive whole number");
+                    validResponse = false;
+                }
+                else
+                {
+                    validResponse = true;
+                    Console.WriteLine($"You entered {timeToMonitor} seconds as your time to monitor");
+                }
+
+            } while (!validResponse);
+
+
+            DisplayMenuPrompt("Alarm System Menu");
+
+            return timeToMonitor;
+        }
+
+
+        /// <summary>
+        /// Get light threshold value from user
+        /// </summary>
+        /// <param name="finchRobot">finch robot object</param>
+        /// <param name="sensorsToMonitor">sensors to monitor</param>
+        /// <returns>light threshold value</returns>
+        static int AlarmSystemDisplayGetLightThresholdValue(Finch finchRobot, string sensorsToMonitor)
+        {
+            int thresholdValue = 0;
+            int currentLeftSensorValue = finchRobot.getLeftLightSensor();
+            int currentRightSensorValue = finchRobot.getRightLightSensor();
+            DisplayScreenHeader("Threshold Value");
+
+            //display ambient values
+            switch (sensorsToMonitor)
+            {
+                case "left":
+                    Console.WriteLine($"Current {sensorsToMonitor} Sensor Value: {currentLeftSensorValue}");
+                    break;
+
+                case "right":
+                    Console.WriteLine($"Current {sensorsToMonitor} Sensor Value: {currentRightSensorValue}");
+                    break;
+
+                case "both":
+                    Console.WriteLine($"Current {sensorsToMonitor} Sensor Value: {currentLeftSensorValue}");
+                    Console.WriteLine($"Current {sensorsToMonitor} Sensor Value: {currentRightSensorValue}");
+                    break;
+
+                default:
+                    Console.WriteLine("\tUnkown sensor reference");
+                    break;
+            }
+
+            //get threshold from user
+            Console.WriteLine("Enter Light Threshold");
+
+
+            bool validResponse = false;
+
+            //validate threshold
+            do
+            {
+                string userResponse = Console.ReadLine();
+
+                if (!int.TryParse(userResponse, out thresholdValue)) 
+                {
+                    Console.WriteLine("Please enter a positive whole number");
+                    validResponse = false;
+                }
+                else
+                {
+                    validResponse = true;
+                    Console.WriteLine($"You entered {thresholdValue} as your threshold to alarm");
+                }
+
+            } while (!validResponse);
+
+
+            DisplayMenuPrompt("Alarm System Menu");
+
+            return thresholdValue;
+        }
+
+
+        /// <summary>
+        /// Get range type from user
+        /// </summary>
+        /// <param name="finchRobot">finch robot object</param>
+        /// <returns>minimum or maximum range type</returns>
+         static string AlarmSystemDisplayGetRangeType(Finch finchRobot)
+        {
+            string rangeType = "";
+
+            DisplayScreenHeader("Range Type");
+
+            Console.WriteLine("Enter range type [minimum, maximum]:");
             
 
-            #endregion
+            bool validResponse = false;
+
+            //validate range type
+            do
+            {
+                rangeType = Console.ReadLine();
+
+                if (rangeType != "minimum" && rangeType != "maximum")
+                {
+                    validResponse = false;
+                    Console.WriteLine("Please enter 'minimum' or 'maximum'");
+                }
+                else
+                {
+                    validResponse = true;
+                    Console.WriteLine($"You entered {rangeType} as the range type");
+                }
+
+            } while (!validResponse);
+
+
+            DisplayMenuPrompt("Alarm System Menu");
+
+            return rangeType;
+        }
+
+
+         /// <summary>
+         /// Get sensors to monitor (left, right, both)
+         /// </summary>
+         /// <returns>sensors to monitor</returns>
+         static string AlarmSystemDisplayGetSensors()
+        {
+            string sensorsToMonitor = "";
+
+            DisplayScreenHeader("Sensors to Monitor");
+
+            Console.WriteLine("Choose a sensor value: (left, right, both)");
+            
+            bool validResponse = false;
+
+            //validate sensor choice
+            do
+            {
+                sensorsToMonitor = Console.ReadLine();
+
+                if (sensorsToMonitor != "left" && sensorsToMonitor != "right" && sensorsToMonitor != "both")
+                {
+                    validResponse = false;
+                    Console.WriteLine("Please choose 'left', 'right', or 'both' as a sensor value");
+                }
+                else
+                {
+                    validResponse = true;
+                    Console.WriteLine($"You chose {sensorsToMonitor} as the sensor(s) to monitor");
+                }
+
+            } while (!validResponse);
+
+            DisplayMenuPrompt("Alarm System");
+
+            return sensorsToMonitor;
+        }
+
+
+        #endregion
 
         #region TALENT SHOW
 
-            /// <summary>
-            /// *****************************************************************
-            /// *                     Talent Show Menu                          *
-            /// *****************************************************************
-            /// </summary>
-            static void TalentShowDisplayMenuScreen(Finch finchRobot)
+        /// <summary>
+        /// *****************************************************************
+        /// *                     Talent Show Menu                          *
+        /// *****************************************************************
+        /// </summary>
+        static void TalentShowDisplayMenuScreen(Finch finchRobot)
             {
                 Console.CursorVisible = true;
 
