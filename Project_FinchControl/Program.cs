@@ -115,7 +115,7 @@ namespace Project_FinchControl
                         break;
 
                     case "e":
-                        UesrProgrammingDisplayMenuScreen(finchRobot);
+                        UserProgrammingDisplayMenuScreen(finchRobot);
                         break;
 
                     case "f":
@@ -1222,7 +1222,7 @@ namespace Project_FinchControl
         /// *                     User Programming Menu                     *
         /// *****************************************************************
         /// </summary>
-        static void UesrProgrammingDisplayMenuScreen(Finch finchRobot)
+        static void UserProgrammingDisplayMenuScreen(Finch finchRobot)
         {
             Console.CursorVisible = true;
 
@@ -1478,35 +1478,33 @@ namespace Project_FinchControl
                         break;
                     case Command.SONG_AND_DANCE:
 
-                            for (int hertz = 698; hertz < 784; hertz =+ 43)
-                            {
                                 finchRobot.setLED(0, 150, 150);
 
-                                //loop through song and spin left
-                                finchRobot.setMotors(motorSpeed, 0);
+                                //sing and spin left
+                                finchRobot.setMotors((motorSpeed * 3)/4 , motorSpeed);
 
-                                finchRobot.noteOn(hertz);
-                                finchRobot.wait(2000);
+                                finchRobot.noteOn(880);
+                                finchRobot.wait(1000);
 
                                 finchRobot.noteOff();
-                                finchRobot.wait(1000 / 2);
+                                finchRobot.wait(500 / 2);
 
-                                finchRobot.noteOn(hertz / 4);
-                                finchRobot.wait(2000 + (2000 / 2) );
+                                finchRobot.noteOn(932);
+                                finchRobot.wait(500);
 
                                 //change light to red and spin right
                                 finchRobot.setMotors(0, 0);
                                 finchRobot.setLED(150, 0, 100);
-                                finchRobot.setMotors(0, motorSpeed);
+                                finchRobot.setMotors(motorSpeed, (motorSpeed * 3)/4);
 
-                                finchRobot.noteOn(hertz);
-                                finchRobot.wait(1000);
-                        }
+                                finchRobot.noteOn(988);
+                                finchRobot.wait(1500);
+
                             //stop and play finale
                             finchRobot.setMotors(0,0);
 
-                            finchRobot.noteOn(900);
-                            finchRobot.wait(2000);
+                            finchRobot.noteOn(1047);
+                            finchRobot.wait(500);
                             finchRobot.noteOff();
 
                         break;
@@ -1523,10 +1521,10 @@ namespace Project_FinchControl
                         finchRobot.wait(waitMilliseconds);
                         break;
                     case Command.TURNRIGHT:
-                        finchRobot.setMotors(motorSpeed / 2, motorSpeed);
+                        finchRobot.setMotors(motorSpeed / 4, motorSpeed);
                         break;
                     case Command.TURNLEFT:
-                        finchRobot.setMotors(motorSpeed, motorSpeed / 2);
+                        finchRobot.setMotors(motorSpeed, motorSpeed / 4);
                         break;
                     case Command.LEDON:
                         for (int i = 0; i < waitSeconds; i++)
